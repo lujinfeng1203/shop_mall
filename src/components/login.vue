@@ -81,6 +81,7 @@ export default {
             let data = res.data;
             console.log(data)
 
+
            if(data.meta.status !==200) return _this.$message.error("登录失败");
            _this.$message({
              message:"登录成功",
@@ -88,7 +89,7 @@ export default {
              duration:1000
 
            });
-           window.sessionStorage.setItem("token",data.token);
+           window.sessionStorage.setItem("token",data.data.token);
            _this.$router.push('/home')
 
 
