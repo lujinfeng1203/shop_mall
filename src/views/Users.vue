@@ -44,11 +44,22 @@
           <el-table-column label="操作" width="200px">
             <template slot-scope="scope">
               <!-- 编辑 -->
-              <el-button type="primary" icon="el-icon-edit" size="mini" @click="editDialog(scope.row.id)"></el-button>
+              <el-button
+                type="primary"
+                icon="el-icon-edit"
+                size="mini"
+                @click="editDialog(scope.row.id)"
+              ></el-button>
               <!-- 删除 -->
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeUsers(scope.row.id)"></el-button>
+              <el-button
+                type="danger"
+                icon="el-icon-delete"
+                size="mini"
+                @click="removeUsers(scope.row.id)"
+              ></el-button>
+              <!-- 分配角色 -->
               <el-tooltip content="分配角色" placement="top">
-                <el-button type="warning" icon="el-icon-setting" size="mini"></el-button>
+                <el-button type="warning" icon="el-icon-setting" size="mini" @click="setRoles(scope.row)"></el-button>
               </el-tooltip>
             </template>
           </el-table-column>
@@ -91,13 +102,12 @@
       </span>
     </el-dialog>
 
-
     <el-dialog title="修改用户" :visible.sync="editdialogVisible" width="50%" @close="editDialogClosed">
-        <el-form :model="editForm" :rules="rules" ref="editFormRef" label-width="100px">
-        <el-form-item label="用户名" prop="username" >
+      <el-form :model="editForm" :rules="rules" ref="editFormRef" label-width="100px">
+        <el-form-item label="用户名" prop="username">
           <el-input v-model="editForm.username" disabled></el-input>
         </el-form-item>
-      
+
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="editForm.email"></el-input>
         </el-form-item>
@@ -111,6 +121,22 @@
         <el-button type="primary" @click="editUsers">确 定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 分配角色对话框 -->
+    <el-dialog title="分配角色" :visible.sync="setRoleDialogVisible" width="30%" @closed="setRoleDialogColsed" >
+        <p>当前用户：{{userInfo.username}}</p>
+        <p>当前角色：{{userInfo.role_name}}</p>
+        <p>当前角色：
+          <el-select v-model="selectRolesId" placeholder="请选择">
+            <el-option v-for="item in rolesList" :key="item.id" :label="item.roleName" :value="item.id"></el-option>
+          </el-select>
+        </p>
+        
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="setRoleDialogVisible = false">取 消</el-button>
+        <el-button type="primary"  @click="saveUserRole">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -119,28 +145,24 @@ export default {
   name: "Users",
 
   data() {
-
-    var checkEmail = (rule,value,cb)=>{
-
-      const regEmail=/^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/
-      if(regEmail.test(value)){
-        return cb()
+    var checkEmail = (rule, value, cb) => {
+      const regEmail = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
+      if (regEmail.test(value)) {
+        return cb();
       }
-      cb(new Error("请输入合法邮箱"))
-
+      cb(new Error("请输入合法邮箱"));
     };
-    var checkMobile = (rule,value,cb)=>{
-
-      const regMobile=/^1([38][0-9]|4[579]|5[0-3,5-9]|6[6]|7[0135678]|9[89])\d{8}$/
-      if(regMobile.test(value)){
-        return cb()
+    var checkMobile = (rule, value, cb) => {
+      const regMobile = /^1([38][0-9]|4[579]|5[0-3,5-9]|6[6]|7[0135678]|9[89])\d{8}$/;
+      if (regMobile.test(value)) {
+        return cb();
       }
-      cb(new Error("请输入合法手机号"))
-
-    }
+      cb(new Error("请输入合法手机号"));
+    };
 
     return {
       userList: [],
+      rolesList:[],
       queryInfo: {
         query: "",
         pagenum: 1,
@@ -148,21 +170,22 @@ export default {
       },
       total: 0,
       dialogVisible: false,
-      editdialogVisible:false,
-      addForm:{
-        username:"",
-        password:"",
-        email:"",
-        mobile:""
-
+      editdialogVisible: false,
+      setRoleDialogVisible:false,
+      addForm: {
+        username: "",
+        password: "",
+        email: "",
+        mobile: ""
       },
-      editForm:{
+      editForm: {},
+      userInfo:{},
+      selectRolesId:"",
 
-      },
-      rules:{
+      rules: {
         // 添加表单验证规则
-        username:[
-          {required:true,message:'请输入用户名',trigger:"blur"},
+        username: [
+          { required: true, message: "请输入用户名", trigger: "blur" },
           {
             min: 3,
             max: 10,
@@ -179,11 +202,11 @@ export default {
         ],
         email: [
           { required: true, message: "请输邮箱", trigger: "blur" },
-          { validator: checkEmail,trigger: "blur"}         
+          { validator: checkEmail, trigger: "blur" }
         ],
         mobile: [
-          { required: true, message: "请输入手机号", trigger: "blur" },        
-          { validator: checkMobile,trigger: "blur"}
+          { required: true, message: "请输入手机号", trigger: "blur" },
+          { validator: checkMobile, trigger: "blur" }
         ]
       }
     };
@@ -193,14 +216,18 @@ export default {
     this.gitUserList();
   },
   methods: {
-    addDialogClosed(){
-      this.$refs.addFormRef.resetFields()
+    addDialogClosed() {
+      this.$refs.addFormRef.resetFields();
+    },
+    editDialogClosed() {
+      this.$refs.editFormRef.resetFields();
+    },
+    setRoleDialogColsed(){
+      this.selectRolesId='',
+      this.userInfo={}
+
 
     },
-    editDialogClosed(){
-      this.$refs.editFormRef.resetFields()
-    }
-    ,
     gitUserList() {
       let _this = this;
       this.$http
@@ -246,114 +273,130 @@ export default {
           console.error(err);
         });
     },
-    addusers(){
-      let _this=this
+    addusers() {
+      let _this = this;
 
-      this.$refs.addFormRef.validate(valid=>{
-        if(!valid)return
+      this.$refs.addFormRef.validate(valid => {
+        if (!valid) return;
 
-        this.$http.post('users',this.addForm).then(
-          res=>{
-            let data=res.data
-            console.log(data)
-            if(data.meta.status!==200){
-            return  _this.$message.error("添加用户失败")
-            }
-             _this.$message.success("添加用户成功")
-             _this.dialogVisible=false
-             _this.gitUserList()
+        this.$http.post("users", this.addForm).then(res => {
+          let data = res.data;
+          console.log(data);
+          if (data.meta.status !== 200) {
+            return _this.$message.error("添加用户失败");
           }
-        )       
-      }
-      )
+          _this.$message.success("添加用户成功");
+          _this.dialogVisible = false;
+          _this.gitUserList();
+        });
+      });
     },
-// 查询用户
-    editDialog(id){
-     let  _this=this
-      this.editdialogVisible =true;
-      this.$http.get('users/' + id).then(
+    // 查询用户
+    editDialog(id) {
+      let _this = this;
+      this.editdialogVisible = true;
+      this.$http.get("users/" + id).then(res => {
+        let data = res.data;
+        if (data.meta.status !== 200) {
+          return _this.$message.error("查询用户失败");
+        }
+        _this.editForm = data.data;
+      });
+    },
+    editUsers() {
+      let _this = this;
+      this.$refs.editFormRef.validate(valid => {
+        if (!valid) return;
+
+        this.$http
+          .put("users/" + this.editForm.id, {
+            email: this.editForm.email,
+            mobile: this.editForm.mobile
+          })
+          .then(res => {
+            let data = res.data;
+            console.log(data);
+            if (data.meta.status !== 200) {
+              return _this.$message.error("修改用户失败");
+            }
+            _this.$message.success("修改用户成功");
+            _this.editdialogVisible = false;
+            _this.gitUserList();
+          });
+      });
+    },
+    removeUsers(id) {
+      let _this = this;
+      this.$confirm("此操作将永久删除该用户, 是否继续?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          this.$message({
+            type: "success",
+            message: "删除成功!"
+          });
+          this.$http.delete("users/" + id).then(res => {
+            let data = res.data;
+            if (data.meta.status !== 200) {
+              return _this.$message.error("删除用户失败");
+            }
+            _this.gitUserList();
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
+    },
+
+    // 分配角色
+ setRoles(userInfo){
+      let _this=this
+      this.userInfo=userInfo
+
+      this.$http.get('roles').then(
         res=>{
-          let data= res.data
-          if(data.meta.status!==200){
-           return _this.$message.error("查询用户失败")
-
+          let data=res.data
+          if(data.meta.status !==200){
+            return _this.$message.error("失败")
           }
-          _this.editForm=data.data
-
+              _this.$message.success("成功")
+              _this.rolesList=data.data
         }
       )
 
-    },
-    editUsers(){
-       let _this=this
-       this.$refs.editFormRef.validate(valid=>{
-        if(!valid)return
+      this.setRoleDialogVisible=true
 
-        this.$http.put('users/'+ this.editForm.id,{
-          email:this.editForm.email,
-          mobile:this.editForm.mobile  
-        }).then(
-          res=>{
-            let data=res.data
-            console.log(data)
-            if(data.meta.status!==200){
-            return  _this.$message.error("修改用户失败")
-            }
-             _this.$message.success("修改用户成功")
-             _this.editdialogVisible=false
-             _this.gitUserList()
-          }
-        )       
+
+    },
+
+ saveUserRole(){
+      let _this=this
+      if(!this.selectRolesId){
+        return _this.$message.error("请选择角色")
+
       }
-      )
-    },
-    removeUsers(id){
-       let _this=this
-    this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(()=>{
-          this.$message({
-            type: 'success',
-            message: '删除成功!'
-          });
-          this.$http.delete('users/'+id).then(
-          res=>{
-            let data=res.data
-            if(data.meta.status !==200){
-              return _this.$message.error("删除用户失败")
+     this.$http.put(`users/${this.userInfo.id}/role`,{rid:this.selectRolesId}).then(
+       res=>{
+         let data= res.data
+         if(data.meta.status!==200){
+      return _this.$message.error("失败")
+    }
+    _this.$message.success("成功")
+    _this.gitUserList()
+    _this.setRoleDialogVisible=false
 
-            }
-            _this.gitUserList()
-          }
-        )
-          
-          
-          
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消删除'
-          });          
-        });
-
-        
-     
+         
+       }
+     )
+    
 
       
-
-
     }
-
-
-
-
-
-
-
-
-
   }
 };
 </script>
@@ -366,6 +409,6 @@ export default {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15) !important;
 }
 .el-row {
-  margin-bottom: 20px
+  margin-bottom: 20px;
 }
 </style>

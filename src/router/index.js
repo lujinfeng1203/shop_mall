@@ -18,7 +18,12 @@ const routes = [
   {
     path: "/home",
     component: Home,
-    children: [{ path: "/users", component: Users }]
+    children: [
+      { path: "/users", component: Users },
+      {path:"/rights",component:()=>import('@/views/power/Rights.vue')},
+      {path:"/roles",component:()=>import('@/views/power/Roles.vue')}
+    ]
+
   }
 ];
 
