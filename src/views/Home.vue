@@ -74,7 +74,7 @@ export default {
       let _this = this;
       this.$http.get("menus").then(function(res) {
         let data = res.data;
-        console.log(data);
+       
         if (data.meta.status !== 200)
           return _this.$message.error(data.meta.msg);
         _this.menuList = data.data;
