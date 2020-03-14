@@ -15,13 +15,13 @@
       <tree-table
         class="tree-table"
         :data="cateList"
-        :columns="columns"
+        :columns="column"
         :selection-type="false"
         :expand-type="false"
         :show-index="true"
         index-text="#"
         border
-        :show-row-hover="false"
+        
       >
         <template slot="isok" slot-scope="scope">
           <i class="el-icon-success" v-if="scope.row.cat_deleted===false" style="color:lightgreen"></i>
@@ -33,7 +33,7 @@
           <el-tag size="mini" type="success" v-else-if="scope.row.cat_level===1">二级</el-tag>
           <el-tag size="mini" type="warning" v-else>三级</el-tag>
         </template>
-        <template slot="opt" slot-scope="scope">
+        <template slot="opt" >
           <el-button type="primary" icon="el-icon-edit" size="mini">编辑</el-button>
           <el-button type="danger" icon="el-icon-delete" size="mini">删除</el-button>
         </template>
@@ -107,7 +107,7 @@ export default {
         ]
       },
       total: 0,
-      columns: [
+      column: [
         {
           lable: "分类名称",
           prop: "cat_name"
