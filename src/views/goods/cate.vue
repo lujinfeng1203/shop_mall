@@ -15,7 +15,7 @@
       <tree-table
         class="tree-table"
         :data="cateList"
-        :columns="column"
+        :columns='columns'
         :selection-type="false"
         :expand-type="false"
         :show-index="true"
@@ -107,7 +107,7 @@ export default {
         ]
       },
       total: 0,
-      column: [
+      columns: [
         {
           lable: "分类名称",
           prop: "cat_name"
@@ -124,6 +124,8 @@ export default {
           template: "opt"
         }
       ]
+       
+      
     };
   },
 
